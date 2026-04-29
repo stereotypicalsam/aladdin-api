@@ -422,6 +422,198 @@ curl "https://statesofglory.com/api/v1/shareholders?holder_id=69ef1355c89cc52094
 
 ---
 
+### `GET /api/v1/parties`
+
+All parties from the latest snapshot with member counts.
+
+```bash
+curl https://statesofglory.com/api/v1/parties \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/parties?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 8,
+  "parties": [
+    {
+      "country": "US",
+      "partySeqId": 1,
+      "partyName": "Republican Alliance",
+      "memberCount": 14
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/parties/{party_seq_id}/members`
+
+All members of a party with their influence scores. Use `partySeqId` from `/api/v1/parties` as the path parameter.
+
+Results are sorted by `partyInfluence` descending — most influential first.
+
+```bash
+curl https://statesofglory.com/api/v1/parties/1/members \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# If the same sequential ID exists in multiple countries, specify one
+curl "https://statesofglory.com/api/v1/parties/1/members?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "country": "US",
+  "partySeqId": 1,
+  "partyName": "Republican Alliance",
+  "count": 14,
+  "members": [
+    {
+      "charId": "69ef1355c89cc52094f9e214",
+      "charSeqId": 17,
+      "name": "Kaldr",
+      "homeState": "New York",
+      "currentOffice": { "type": "president", "state": null, "senateClass": null },
+      "partyInfluence": 8420
+    }
+  ]
+}
+```
+
+`currentOffice` is `null` if the member holds no office. When present, `type` is one of `president`, `senator`, `governor`, `representative`, etc.
+
+---
+
+### `GET /api/v1/congress/members`
+
+All congress members from the latest snapshot.
+
+```bash
+curl https://statesofglory.com/api/v1/congress/members \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to US Senate only
+curl "https://statesofglory.com/api/v1/congress/members?country=US&chamber=senate" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 100,
+  "members": [
+    {
+      "country": "US",
+      "chamber": "senate",
+      "charId": "69ef1355c89cc52094f9e214",
+      "name": "Kaldr",
+      "party": "republican-alliance",
+      "partyName": "Republican Alliance",
+      "state": "New York",
+      "officeType": "senator",
+      "isNpp": false,
+      "isVacant": false,
+      "electedAt": "2026-01-15T00:00:00"
+    }
+  ]
+}
+```
+
+`isNpp` is `true` for non-player positions (AI-controlled). `isVacant` is `true` for empty seats.
+
+---
+
+### `GET /api/v1/congress/leaders`
+
+Current congressional leadership positions from the latest snapshot.
+
+```bash
+curl https://statesofglory.com/api/v1/congress/leaders \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 4,
+  "leaders": [
+    {
+      "name": "Kaldr",
+      "role": "Speaker",
+      "party": "republican-alliance",
+      "partyName": "Republican Alliance",
+      "state": "New York"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/congress/cabinet-nominations`
+
+Active cabinet nominations from the latest snapshot.
+
+```bash
+curl https://statesofglory.com/api/v1/congress/cabinet-nominations \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 2,
+  "nominations": [
+    {
+      "nominee": "PlayerName",
+      "position": "Secretary of State",
+      "status": "pending"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/elections/composition`
+
+Current and projected seat counts by party for each chamber.
+
+```bash
+curl https://statesofglory.com/api/v1/elections/composition \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "currentHouse": [
+    { "party": "republican-alliance", "partyName": "Republican Alliance", "seats": 230 },
+    { "party": "democratic-front", "partyName": "Democratic Front", "seats": 205 }
+  ],
+  "currentSenate": [ ... ],
+  "projectedHouse": [ ... ],
+  "projectedSenate": [ ... ]
+}
+```
+
+`currentHouse`/`currentSenate` reflect seated members. `projectedHouse`/`projectedSenate` factor in active elections and polling.
+
+---
+
 ## Field Reference
 
 ### Corp fields
