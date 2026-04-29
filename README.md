@@ -15,7 +15,7 @@ API keys are issued by the ALADDIN admin. Contact **stereotypicalsam** on Discor
 
 Your key looks like this:
 ```
-alad_ac1KhZl38CFRH0T-tuudJeaYk2LtECm95ujwfT8BB68
+alad_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 **The key is shown once at creation and cannot be recovered.** If you lose it, a new one has to be issued.
