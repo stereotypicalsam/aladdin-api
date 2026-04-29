@@ -42,7 +42,7 @@ Missing or invalid keys return `401`. Revoked keys return `403`.
 
 ## Rate Limiting
 
-Each key is capped at **30 requests per hour** by default. Since ALADDIN data refreshes once per hour, there is no benefit to polling more frequently than that — the response will be identical until the next pipeline run.
+Each key is capped at **100 requests per hour** by default. Since ALADDIN data refreshes once per hour, there is no benefit to polling more frequently than that — the response will be identical until the next pipeline run.
 
 If you exceed the limit, you'll get:
 ```
