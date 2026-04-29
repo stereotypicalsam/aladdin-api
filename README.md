@@ -343,7 +343,7 @@ curl "https://statesofglory.com/api/v1/government?country=US" \
 
 ### `GET /api/v1/influence`
 
-Political influence leaderboard — all players per country, ranked by influence score.
+Political influence leaderboard — all players per country, ranked by influence score. Includes current influence, national influence, and favorability for each player.
 
 ```bash
 curl https://statesofglory.com/api/v1/influence \
@@ -364,12 +364,96 @@ curl "https://statesofglory.com/api/v1/influence?country=US" \
       "country": "US",
       "rank": 1,
       "name": "Kaldr",
-      "influence": 8420,
+      "influence": 84.2,
+      "politicalInfluence": 84.2,
+      "nationalPoliticalInfluence": 237.8,
+      "favorability": 71.4,
       "profileUrl": "https://www.ahousedividedgame.com/character/17"
     }
   ]
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `influence` | Same as `politicalInfluence` — included for backwards compatibility |
+| `politicalInfluence` | Normalised current influence score (0–100) within the current state or district |
+| `nationalPoliticalInfluence` | Raw national influence score — comparable across all players in the country |
+| `favorability` | Public favorability rating (0–100) |
+
+---
+
+### `GET /api/v1/compass`
+
+Political compass positions for all parties and players. Party positions use `economicPosition` (left/right) and `socialPosition` (progressive/conservative) on a **−10 to +10 scale**. Player positions are derived from their party membership.
+
+```bash
+curl https://statesofglory.com/api/v1/compass \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/compass?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "partyCount": 8,
+  "playerCount": 42,
+  "parties": [
+    {
+      "country": "US",
+      "partyId": "republican-alliance",
+      "name": "Republican Alliance",
+      "abbreviation": "RA",
+      "color": "#c0392b",
+      "economicPosition": 3,
+      "socialPosition": 2,
+      "memberCount": 14,
+      "playerCount": 10,
+      "treasury": 2400000.0,
+      "chair": { "name": "Kaldr", "characterId": "69ef..." }
+    }
+  ],
+  "players": [
+    {
+      "country": "US",
+      "rank": 1,
+      "name": "Kaldr",
+      "profileUrl": "https://www.ahousedividedgame.com/character/17",
+      "party": "Republican Alliance",
+      "partyColor": "#c0392b",
+      "politicalInfluence": 84.2,
+      "nationalPoliticalInfluence": 237.8,
+      "favorability": 71.4,
+      "economicPosition": 3,
+      "socialPosition": 2
+    }
+  ]
+}
+```
+
+**Compass scale:**
+
+| economicPosition | Label |
+|-----------------|-------|
+| −4 to −10 | Far Left |
+| −2 to −3 | Centre-Left |
+| 0 | Centre |
+| 2 to 3 | Centre-Right |
+| 4 to 10 | Far Right |
+
+| socialPosition | Label |
+|---------------|-------|
+| −4 to −10 | Very Progressive |
+| −2 to −3 | Moderate Progressive |
+| 0 | Neutral |
+| 2 to 3 | Traditional |
+| 4 to 10 | Very Conservative |
+
+Players with no party affiliation have `economicPosition: null` and `socialPosition: null`.
 
 ---
 
@@ -611,6 +695,217 @@ curl https://statesofglory.com/api/v1/elections/composition \
 ```
 
 `currentHouse`/`currentSenate` reflect seated members. `projectedHouse`/`projectedSenate` factor in active elections and polling.
+
+---
+
+### `GET /api/v1/macro/parties`
+
+Full party metadata including ideological compass positions, leadership, member counts, and treasury.
+
+```bash
+curl https://statesofglory.com/api/v1/macro/parties \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/macro/parties?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 8,
+  "parties": [
+    {
+      "country": "US",
+      "partyId": "republican-alliance",
+      "sequentialId": 1,
+      "name": "Republican Alliance",
+      "abbreviation": "RA",
+      "color": "#c0392b",
+      "economicPosition": 3,
+      "socialPosition": 2,
+      "memberCount": 14,
+      "playerCount": 10,
+      "treasury": 2400000.0,
+      "chair": { "name": "Kaldr", "characterId": "69ef..." },
+      "viceChair": null,
+      "isDefault": false
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/macro/approval`
+
+Government approval ratings per country with turn-by-turn history.
+
+```bash
+curl https://statesofglory.com/api/v1/macro/approval \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/macro/approval?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 7,
+  "approvals": [
+    {
+      "country": "US",
+      "approval": 54.2,
+      "history": [
+        { "turn": 385, "approval": 51.0, "net": 2.1 },
+        { "turn": 386, "approval": 52.8, "net": 1.8 }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/macro/central-bank`
+
+Central bank data per country — interest rates, inflation, GDP growth, balance sheet, and 240-turn histories.
+
+```bash
+curl https://statesofglory.com/api/v1/macro/central-bank \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/macro/central-bank?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 7,
+  "centralBanks": [
+    {
+      "country": "US",
+      "bankName": "Federal Reserve",
+      "currencyCode": "USD",
+      "primeRate": 5.25,
+      "effectiveRate": 5.0,
+      "currentInflation": 3.1,
+      "inflationBreakdown": { "housing": 1.2, "energy": 0.4, ... },
+      "interestRateHistory": [ { "turn": 385, "rate": 5.0 }, ... ],
+      "inflationHistory": [ { "turn": 385, "inflation": 3.0 }, ... ],
+      "gdpGrowthHistory": [ { "turn": 385, "growth": 2.1 }, ... ],
+      "balanceSheet": { ... },
+      "bankFinancials": { ... }
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/macro/forex`
+
+Forex rate history — per-currency turn-by-turn exchange rates against the base.
+
+```bash
+curl https://statesofglory.com/api/v1/macro/forex \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one currency, last 50 turns
+curl "https://statesofglory.com/api/v1/macro/forex?currency=GBP&limit=50" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Query params:** `?currency=GBP` · `?limit=240` (default 240, max 500)
+
+**Response:**
+```json
+{
+  "count": 7,
+  "currencies": {
+    "USD": [ { "turn": 385, "rate": 1.0 }, ... ],
+    "GBP": [ { "turn": 385, "rate": 0.79 }, ... ]
+  }
+}
+```
+
+---
+
+### `GET /api/v1/macro/market-cap`
+
+Global stock market capitalisation history with per-sector breakdown.
+
+```bash
+curl "https://statesofglory.com/api/v1/macro/market-cap?limit=50" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Query params:** `?limit=200` (default 200, max 500)
+
+**Response:**
+```json
+{
+  "count": 200,
+  "points": [
+    {
+      "turn": 385,
+      "marketCap": 4821930000.0,
+      "high": 4950000000.0,
+      "low": 4700000000.0,
+      "bySector": {
+        "financial": 820000000.0,
+        "technology": 610000000.0,
+        "energy": 480000000.0
+      }
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/macro/commodities`
+
+Per-commodity data — global price, supply/demand balance, per-state prices, top producers, and price history.
+
+```bash
+curl https://statesofglory.com/api/v1/macro/commodities \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one commodity
+curl "https://statesofglory.com/api/v1/macro/commodities?commodity=oil" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Query params:** `?commodity=oil` — one of: `oil`, `coal`, `food`, `copper`, `iron`, `chemicals`, `plastics`, `electronics`, `energy`, `steel`
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 10,
+  "commodities": [
+    {
+      "commodityType": "oil",
+      "globalPrice": 84.20,
+      "globalSupply": 12400000.0,
+      "globalDemand": 11800000.0,
+      "priceChange": 1.4,
+      "statePrices": { "Texas": 82.10, "California": 85.40 },
+      "topProducers": [ { "name": "OilCorp", "output": 840000 } ],
+      "history": [ { "turn": 385, "price": 83.10, "supply": 12200000, "demand": 11600000 } ]
+    }
+  ]
+}
+```
 
 ---
 
