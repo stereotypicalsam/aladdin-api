@@ -83,7 +83,7 @@ Use `fetchedAt` to know how fresh the data is before making further calls.
 
 ### `GET /api/v1/corps`
 
-All corporations from the latest snapshot.
+All corporations from the latest snapshot, including credit rating data.
 
 ```bash
 curl https://statesofglory.com/api/v1/corps \
@@ -126,11 +126,17 @@ curl https://statesofglory.com/api/v1/corps \
       "ceoSequentialId": 17,
       "ceoVacant": false,
       "shareholderCount": 8,
-      "sectorCount": 3
+      "sectorCount": 3,
+      "creditRating": "BBB",
+      "creditScore": 58.4,
+      "totalDebt": 4200000.0,
+      "netWorth": 18700000.0
     }
   ]
 }
 ```
+
+`creditRating` is `null` if ALADDIN has not yet computed a rating for the corp (newly listed or insufficient history). Prediction signals (`BUY`, `SELL`, etc.) are available in the dashboard but are not currently exposed via the developer API.
 
 ---
 
@@ -147,7 +153,42 @@ curl https://statesofglory.com/api/v1/corps/abc123 \
 ```json
 {
   "snapshotId": 412,
-  "corp": { ...same fields as above... },
+  "corp": {
+    "corpId": "abc123",
+    "sequentialId": 42,
+    "name": "Nexus Corp",
+    "type": "corporation",
+    "typeLabel": "Corporation",
+    "countryId": "US",
+    "homeState": "New York",
+    "currencyCode": "USD",
+    "sharePrice": 148.50,
+    "totalShares": 1000000,
+    "publicFloat": 420000,
+    "marketCap": 148500000.0,
+    "marketCapUsd": 148500000.0,
+    "totalRevenue": 9200000.0,
+    "income": 1400000.0,
+    "incomeUsd": 1400000.0,
+    "liquidCapital": 3100000.0,
+    "liquidCapitalUsd": 3100000.0,
+    "priceChange1h": 0.8,
+    "priceChange24h": -2.1,
+    "priceChange48h": 1.4,
+    "avgSectorGrowth": 3.2,
+    "dividendRate": 0.04,
+    "isNatcorp": false,
+    "isNationalized": false,
+    "ceoName": "Kaldr",
+    "ceoSequentialId": 17,
+    "ceoVacant": false,
+    "shareholderCount": 8,
+    "sectorCount": 3,
+    "creditRating": "BBB",
+    "creditScore": 58.4,
+    "totalDebt": 4200000.0,
+    "netWorth": 18700000.0
+  },
   "history": [
     {
       "turn": 388,
@@ -160,13 +201,12 @@ curl https://statesofglory.com/api/v1/corps/abc123 \
       "creditRating": "BBB",
       "creditComposite": 58.4,
       "marketingStrength": 72.1
-    },
-    ...
+    }
   ]
 }
 ```
 
-History is ordered oldest → newest. Returns `404` if the corp ID doesn't exist in the latest snapshot.
+History is ordered oldest → newest, up to 20 turns. Returns `404` if the corp ID doesn't exist in the latest snapshot.
 
 ---
 
@@ -204,11 +244,21 @@ curl https://statesofglory.com/api/v1/players \
       "bondHoldings": 2,
       "historyTurns": 31,
       "borderKey": "US",
-      "avatarUrl": "https://..."
+      "avatarUrl": "https://www.ahousedividedgame.com/avatars/..."
     }
   ]
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `portfolioValue` | `stockValue + bondValue` — does not include cash |
+| `wealthChange24h` | Absolute USD change in `totalWealth` since 24 hours ago |
+| `rankChange24h` | Positions gained on the wealth leaderboard (positive = moved up) |
+| `stockHoldings` | Number of distinct corporations the player holds shares in |
+| `bondHoldings` | Number of distinct bond positions held |
+| `historyTurns` | How many turns of wealth history ALADDIN has recorded for this player — useful for knowing whether trend data is meaningful |
+| `borderKey` | Country code used for flag display (`US`, `UK`, `DE`, `JP`, `IE`, `BR`, `CN`) — equivalent to `country` for most players |
 
 ---
 
@@ -225,7 +275,27 @@ curl https://statesofglory.com/api/v1/players/69ef1355c89cc52094f9e214 \
 ```json
 {
   "snapshotId": 412,
-  "player": { ...same fields as above... }
+  "player": {
+    "characterId": "69ef1355c89cc52094f9e214",
+    "sequentialId": 7,
+    "name": "Kaldr",
+    "state": "New York",
+    "country": "US",
+    "corporation": "Nexus Corp",
+    "rank": 1,
+    "totalWealth": 48200000.0,
+    "cashValue": 12100000.0,
+    "stockValue": 31400000.0,
+    "bondValue": 4700000.0,
+    "portfolioValue": 36100000.0,
+    "wealthChange24h": 1240000.0,
+    "rankChange24h": 2,
+    "stockHoldings": 4,
+    "bondHoldings": 2,
+    "historyTurns": 31,
+    "borderKey": "US",
+    "avatarUrl": "https://www.ahousedividedgame.com/avatars/..."
+  }
 }
 ```
 
@@ -235,7 +305,7 @@ Returns `404` if the character ID doesn't exist in the latest snapshot.
 
 ### `GET /api/v1/players/{character_id}/history`
 
-Wealth history for a single player — last 50 turns of net worth, cash, stock, and bond values. Useful for spotting whether a party member is growing, stable, or in decline.
+Wealth history for a single player — up to the last 50 turns of net worth, cash, stock, and bond values. If fewer than 50 turns of history exist, returns whatever is available (no 404 — the player object is still returned with an empty or short `history` array).
 
 ```bash
 curl https://statesofglory.com/api/v1/players/69ef1355c89cc52094f9e214/history \
@@ -259,19 +329,75 @@ curl https://statesofglory.com/api/v1/players/69ef1355c89cc52094f9e214/history \
       "cashValue": 8800000.0,
       "liquidCashValue": 6100000.0,
       "savingsCashValue": 2700000.0
-    },
-    ...
+    }
   ]
 }
 ```
 
-History is ordered oldest → newest.
+History is ordered oldest → newest. `liquidCashValue` is cash in the player's wallet; `savingsCashValue` is cash held in a savings account. `totalValue = liquidCashValue + savingsCashValue + stockValue + bondValue`.
+
+---
+
+### `GET /api/v1/shareholders`
+
+Full ownership table from the latest snapshot. Returns every stake in every corporation. Supports filtering by corporation or holder.
+
+```bash
+# All shareholdings
+curl https://statesofglory.com/api/v1/shareholders \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Cap table for one corp — who owns what %
+curl "https://statesofglory.com/api/v1/shareholders?corp_id=abc123" \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# All holdings by one player or corp
+curl "https://statesofglory.com/api/v1/shareholders?holder_id=69ef1355c89cc52094f9e214" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Query params:** `?corp_id=<id>` · `?holder_id=<id>` — both are optional and can be combined.
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 3,
+  "shareholdings": [
+    {
+      "corpId": "abc123",
+      "corpName": "Nexus Corp",
+      "corpCurrency": "USD",
+      "holderType": "character",
+      "holderId": "69ef1355c89cc52094f9e214",
+      "holderName": "Kaldr",
+      "shares": 210000.0,
+      "sharesPct": 21.0,
+      "sharePrice": 148.50,
+      "stakeValue": 31185000.0,
+      "stakeValueUsd": 31185000.0,
+      "isImperial": false
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `holderType` | `"character"` (a player) or `"corporation"` (a corp holding shares in another corp) |
+| `shares` | Raw share count held |
+| `sharesPct` | Percentage of total shares (`shares / totalShares * 100`) |
+| `stakeValue` | Value in the corp's local currency (`shares × sharePrice`) |
+| `stakeValueUsd` | Same value converted to USD |
+| `isImperial` | `true` for special government-granted imperial shares that cannot be sold |
+
+Results are sorted by corp, then by `sharesPct` descending (largest holder first within each corp).
 
 ---
 
 ### `GET /api/v1/elections`
 
-All active elections from the latest snapshot.
+All elections from the latest snapshot — active, upcoming, and recently completed.
 
 ```bash
 curl https://statesofglory.com/api/v1/elections \
@@ -290,22 +416,38 @@ curl "https://statesofglory.com/api/v1/elections?country=US" \
   "elections": [
     {
       "country": "US",
-      "type": "presidential",
+      "electionType": "presidential",
       "status": "active",
+      "state": null,
+      "seatId": null,
+      "endTime": "2026-05-02T00:00:00Z",
       "candidates": [
-        { "name": "Kaldr", "votes": 412, "party": "Republican Alliance" },
-        { "name": "OtherPlayer", "votes": 388, "party": "Democratic Front" }
+        {
+          "characterName": "Kaldr",
+          "party": "republican-alliance",
+          "partyName": "Republican Alliance",
+          "partyColor": "#c0392b",
+          "votes": 412
+        }
       ]
     }
   ]
 }
 ```
 
+| Field | Description |
+|-------|-------------|
+| `electionType` | `"presidential"`, `"senate"`, `"house"`, `"governor"`, `"senate_runoff"`, etc. |
+| `status` | `"active"` (voting open), `"upcoming"` (not yet started), `"completed"` (results final) |
+| `state` | State/region name for sub-national races; `null` for national races |
+| `seatId` | Internal seat identifier for house/senate races; `null` for presidential/governor |
+| `endTime` | ISO 8601 timestamp when voting closes; may be `null` for upcoming elections |
+
 ---
 
 ### `GET /api/v1/government`
 
-Government officials and formation for each country from the latest snapshot.
+Government officials for each country — one row per cabinet/executive position.
 
 ```bash
 curl https://statesofglory.com/api/v1/government \
@@ -320,24 +462,26 @@ curl "https://statesofglory.com/api/v1/government?country=US" \
 ```json
 {
   "snapshotId": 412,
-  "count": 4,
+  "count": 18,
   "governments": [
     {
       "country": "US",
       "countryName": "United States",
-      "officials": [
-        { "name": "Kaldr", "role": "President", "party": "Republican Alliance", "influence": 8420 }
-      ],
-      "governmentFormation": {
-        "pmName": "Kaldr",
-        "coalitionSeats": 218,
-        "totalSeats": 435,
-        "partyBreakdown": [...]
-      }
+      "characterName": "Kaldr",
+      "characterId": "69ef1355c89cc52094f9e214",
+      "role": "President",
+      "section": "Executive",
+      "party": "republican-alliance",
+      "partyName": "Republican Alliance",
+      "partyColor": "#c0392b",
+      "profileUrl": "https://www.ahousedividedgame.com/character/17",
+      "isVacant": false
     }
   ]
 }
 ```
+
+Each item in `governments` is a single official position. `isVacant: true` means the seat exists but no player holds it. Use `/api/v1/elections/composition` for coalition seat counts and parliament breakdown.
 
 ---
 
@@ -918,16 +1062,37 @@ curl "https://statesofglory.com/api/v1/macro/commodities?commodity=oil" \
 | `corpId` | string | Unique game ID |
 | `sequentialId` | int | Short numeric ID (used in game URLs) |
 | `name` | string | Corporation name |
-| `typeLabel` | string | Human-readable type (e.g. "Corporation", "National Corp") |
-| `countryId` | string | Country code (US, UK, DE, JP) |
+| `type` | string | Internal type key (e.g. `"corporation"`, `"natcorp"`) |
+| `typeLabel` | string | Human-readable type (e.g. `"Corporation"`, `"National Corp"`) |
+| `countryId` | string | Country code (`US`, `UK`, `DE`, `JP`, `IE`, `BR`, `CN`) |
+| `homeState` | string | State/region the corp is headquartered in |
+| `currencyCode` | string | Local currency (`USD`, `GBP`, `EUR`, `JPY`, etc.) |
 | `sharePrice` | float | Current share price in local currency |
+| `totalShares` | int | Total shares issued |
+| `publicFloat` | int | Shares available for public trading (excludes locked/imperial shares) |
+| `marketCap` | float | Market cap in local currency |
 | `marketCapUsd` | float | Market cap converted to USD |
+| `totalRevenue` | float | Total revenue in local currency |
+| `income` | float | Net income in local currency |
 | `incomeUsd` | float | Net income converted to USD |
-| `priceChange24h` | float | % price change over last 24h |
-| `dividendRate` | float | Dividend yield (e.g. 0.04 = 4%) |
+| `liquidCapital` | float | Cash on hand in local currency |
+| `liquidCapitalUsd` | float | Cash on hand converted to USD |
+| `priceChange1h` | float | % price change over last 1 hour |
+| `priceChange24h` | float | % price change over last 24 hours |
+| `priceChange48h` | float | % price change over last 48 hours |
+| `avgSectorGrowth` | float | Average growth rate across the corp's sectors |
+| `dividendRate` | float | Dividend yield as a decimal (e.g. `0.04` = 4%) |
+| `isNatcorp` | bool | `true` for government-owned national corps |
+| `isNationalized` | bool | `true` for formerly-private corps that were nationalised |
+| `ceoName` | string | Name of the current CEO; `null` if vacant |
+| `ceoSequentialId` | int | Sequential ID of the CEO character; `null` if vacant |
 | `ceoVacant` | bool | `true` if the CEO seat is empty |
-| `isNatcorp` | bool | Government-owned national corp |
-| `isNationalized` | bool | Previously private corp, now nationalized |
+| `shareholderCount` | int | Number of distinct shareholders |
+| `sectorCount` | int | Number of sectors the corp operates in |
+| `creditRating` | string | Letter rating (`AAA`, `AA`, `A`, `BBB`, `BB`, `B`, `CCC`, `D`); `null` if unrated |
+| `creditScore` | float | Numeric credit composite score (0–100); `null` if unrated |
+| `totalDebt` | float | Total outstanding debt in local currency |
+| `netWorth` | float | Assets minus liabilities in local currency |
 
 ### Player fields
 
@@ -935,13 +1100,23 @@ curl "https://statesofglory.com/api/v1/macro/commodities?commodity=oil" \
 |-------|------|-------------|
 | `characterId` | string | Unique game ID |
 | `sequentialId` | int | Short numeric ID (used in game URLs) |
+| `name` | string | Player display name |
+| `state` | string | Home state/region |
+| `country` | string | Home country code |
+| `corporation` | string | Name of the player's primary corporation; `null` if none |
 | `rank` | int | Wealth rank (1 = richest) |
-| `totalWealth` | float | Net worth in USD |
-| `cashValue` | float | Liquid cash in USD |
+| `totalWealth` | float | Net worth in USD (`cash + stock + bonds`) |
+| `cashValue` | float | Total cash in USD (`liquid + savings`) |
 | `stockValue` | float | Total stock portfolio value in USD |
 | `bondValue` | float | Total bond holdings value in USD |
-| `wealthChange24h` | float | Absolute wealth change in USD over 24h |
-| `rankChange24h` | int | Rank positions gained (positive = moved up) |
+| `portfolioValue` | float | `stockValue + bondValue` (excludes cash) |
+| `wealthChange24h` | float | Absolute USD change in total wealth over 24 hours |
+| `rankChange24h` | int | Rank positions gained (positive = moved up the leaderboard) |
+| `stockHoldings` | int | Number of distinct corps the player holds shares in |
+| `bondHoldings` | int | Number of distinct bond positions |
+| `historyTurns` | int | Number of turns of wealth history recorded by ALADDIN |
+| `borderKey` | string | Country code used for flag rendering — same as `country` for most players |
+| `avatarUrl` | string | URL to the player's avatar image |
 
 ---
 
