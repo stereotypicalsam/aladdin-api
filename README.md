@@ -233,6 +233,146 @@ Returns `404` if the character ID doesn't exist in the latest snapshot.
 
 ---
 
+### `GET /api/v1/players/{character_id}/history`
+
+Wealth history for a single player — last 50 turns of net worth, cash, stock, and bond values. Useful for spotting whether a party member is growing, stable, or in decline.
+
+```bash
+curl https://statesofglory.com/api/v1/players/69ef1355c89cc52094f9e214/history \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "characterId": "69ef1355c89cc52094f9e214",
+  "name": "Kaldr",
+  "currentWealth": 48200000.0,
+  "currentRank": 1,
+  "history": [
+    {
+      "turn": 370,
+      "totalValue": 41000000.0,
+      "stockValue": 28000000.0,
+      "bondValue": 4200000.0,
+      "cashValue": 8800000.0,
+      "liquidCashValue": 6100000.0,
+      "savingsCashValue": 2700000.0
+    },
+    ...
+  ]
+}
+```
+
+History is ordered oldest → newest.
+
+---
+
+### `GET /api/v1/elections`
+
+All active elections from the latest snapshot.
+
+```bash
+curl https://statesofglory.com/api/v1/elections \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/elections?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 2,
+  "elections": [
+    {
+      "country": "US",
+      "type": "presidential",
+      "status": "active",
+      "candidates": [
+        { "name": "Kaldr", "votes": 412, "party": "Republican Alliance" },
+        { "name": "OtherPlayer", "votes": 388, "party": "Democratic Front" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/government`
+
+Government officials and formation for each country from the latest snapshot.
+
+```bash
+curl https://statesofglory.com/api/v1/government \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/government?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 4,
+  "governments": [
+    {
+      "country": "US",
+      "countryName": "United States",
+      "officials": [
+        { "name": "Kaldr", "role": "President", "party": "Republican Alliance", "influence": 8420 }
+      ],
+      "governmentFormation": {
+        "pmName": "Kaldr",
+        "coalitionSeats": 218,
+        "totalSeats": 435,
+        "partyBreakdown": [...]
+      }
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/influence`
+
+Political influence leaderboard — top 25 players per country, ranked by influence score.
+
+```bash
+curl https://statesofglory.com/api/v1/influence \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/influence?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 25,
+  "leaders": [
+    {
+      "country": "US",
+      "rank": 1,
+      "name": "Kaldr",
+      "influence": 8420,
+      "profileUrl": "https://www.ahousedividedgame.com/character/17"
+    }
+  ]
+}
+```
+
+---
+
 ### `GET /api/v1/shareholders`
 
 Full ownership table from the latest snapshot. Shows every stake in every corporation.
