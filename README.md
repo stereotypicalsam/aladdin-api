@@ -75,11 +75,15 @@ curl https://statesofglory.com/api/v1/snapshot \
   "playerCount": 84,
   "corpCount": 61,
   "totalWealth": 4821930000.0,
-  "gini": 0.63
+  "gini": 0.63,
+  "gameTurn": 438,
+  "gameYear": 2029,
+  "nextTurnAt": "2026-04-29T06:00:00.000Z",
+  "turnIsProcessing": false
 }
 ```
 
-Use `fetchedAt` to know how fresh the data is before making further calls.
+Use `fetchedAt` to know how fresh the data is before making further calls. `nextTurnAt` tells you when the game will process the next turn — useful for scheduling refetches.
 
 ---
 
@@ -531,7 +535,9 @@ curl "https://statesofglory.com/api/v1/influence?country=US" \
 
 ### `GET /api/v1/compass`
 
-Political compass positions for all parties and players. Party positions use `economicPosition` (left/right) and `socialPosition` (progressive/conservative) on a **−10 to +10 scale**. Player positions are derived from their party membership.
+Political compass positions for all parties and players. Positions use `economicPosition` (left/right) and `socialPosition` (progressive/conservative) on a **−5 to +5 scale**.
+
+> **Note:** Player `economicPosition` and `socialPosition` are each player's personal political values — distinct from and independent of their party's position.
 
 ```bash
 curl https://statesofglory.com/api/v1/compass \
@@ -574,6 +580,14 @@ curl "https://statesofglory.com/api/v1/compass?country=US" \
       "politicalInfluence": 84.2,
       "nationalPoliticalInfluence": 237.8,
       "favorability": 71.4,
+      "infamy": 0.0,
+      "funds": 5718706,
+      "actions": 10,
+      "donorBaseLevel": 53,
+      "isCeo": true,
+      "ceoOf": "Nexus Corp",
+      "investorRank": 2,
+      "activeElection": { "electionId": "69f1...", "electionType": "senate", "electionState": "CA", "enteredAt": "2026-04-28T23:00:00.000Z" },
       "economicPosition": 3,
       "socialPosition": 2
     }
@@ -581,25 +595,218 @@ curl "https://statesofglory.com/api/v1/compass?country=US" \
 }
 ```
 
-**Compass scale:**
+**Compass scale (−5 to +5):**
 
 | economicPosition | Label |
 |-----------------|-------|
-| −4 to −10 | Far Left |
-| −2 to −3 | Centre-Left |
+| −5 to −3 | Far Left |
+| −2 to −1 | Centre-Left |
 | 0 | Centre |
-| 2 to 3 | Centre-Right |
-| 4 to 10 | Far Right |
+| 1 to 2 | Centre-Right |
+| 3 to 5 | Far Right |
 
 | socialPosition | Label |
 |---------------|-------|
-| −4 to −10 | Very Progressive |
-| −2 to −3 | Moderate Progressive |
+| −5 to −3 | Very Progressive |
+| −2 to −1 | Moderate Progressive |
 | 0 | Neutral |
-| 2 to 3 | Traditional |
-| 4 to 10 | Very Conservative |
+| 1 to 2 | Traditional |
+| 3 to 5 | Very Conservative |
 
-Players with no party affiliation have `economicPosition: null` and `socialPosition: null`.
+Players with no compass data yet will have `economicPosition: null` and `socialPosition: null` (populated on first pipeline run after key issuance).
+
+---
+
+### `GET /api/v1/seats`
+
+Current and projected seat distributions for all legislative chambers.
+
+```bash
+curl https://statesofglory.com/api/v1/seats \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/seats?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 6,
+  "chambers": [
+    {
+      "country": "US",
+      "chamber": "senate",
+      "chamberName": "U.S. Senate",
+      "totalSeats": 100,
+      "inGeneral": false,
+      "current": [
+        { "party": "2", "partyName": "Republican Party", "partyColor": "#EF4444", "seats": 42 },
+        { "party": "1", "partyName": "Democratic Party", "partyColor": "#084bbe", "seats": 33 }
+      ],
+      "projected": [
+        { "party": "2", "partyName": "Republican Party", "partyColor": "#EF4444", "seats": 44 },
+        { "party": "1", "partyName": "Democratic Party", "partyColor": "#084bbe", "seats": 31 }
+      ]
+    }
+  ]
+}
+```
+
+Chambers covered: US senate, US house, UK commons, JP shugiin, JP sangiin, DE bundestag.
+
+`current` = seats held right now. `projected` = model projection based on active elections.
+
+---
+
+### `GET /api/v1/races`
+
+Active and upcoming election details with per-candidate compass positions.
+
+```bash
+curl https://statesofglory.com/api/v1/races \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/races?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 5,
+  "elections": [
+    {
+      "country": "US",
+      "electionId": "69e72ef4fd958232862495d3",
+      "electionType": "senate",
+      "state": "NE",
+      "stateName": "Nebraska",
+      "status": "active",
+      "startTime": "2026-04-27T00:00:00.000Z",
+      "endTime": "2026-05-01T00:00:00.000Z",
+      "phase": { "inPrimary": false, "inGeneral": true, "isUpcoming": false, "isEnded": false },
+      "incumbent": { "name": "Anthony Soprano", "party": "Republican Party" },
+      "candidates": [
+        {
+          "characterName": "Anthony Soprano",
+          "party": "Republican Party",
+          "partyColor": "#EF4444",
+          "economicPosition": 1,
+          "socialPosition": 1.5,
+          "favorability": 60.0,
+          "politicalInfluence": 23.1,
+          "primaryScore": 75.2,
+          "sharePct": 0,
+          "endorsementCount": 0,
+          "campaignFunds": null
+        }
+      ],
+      "votes": null
+    }
+  ]
+}
+```
+
+Only active and upcoming elections are returned. `votes` is populated once an election is finalized.
+
+---
+
+### `GET /api/v1/market/unowned`
+
+Unowned market opportunity by sector type — revenue available for corporations to capture.
+
+```bash
+curl https://statesofglory.com/api/v1/market/unowned \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one sector
+curl "https://statesofglory.com/api/v1/market/unowned?sector=energy" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 13,
+  "sectors": [
+    {
+      "sectorType": "energy",
+      "totalItems": 106,
+      "states": [
+        {
+          "stateId": "CA",
+          "stateName": "California",
+          "countryId": "US",
+          "totalMarket": 19500000,
+          "ownedRevenue": 14200000,
+          "unownedRevenue": 5300000
+        }
+      ]
+    }
+  ]
+}
+```
+
+`unownedRevenue` is the daily revenue currently not captured by any corporation. Sector types: `financial`, `energy`, `defense`, `retail`, `technology`, `chemical_industries`, `healthcare`, `agriculture`, `automobiles`, `manufacturing`, `media`, `real_estate`, `construction`, `telecommunications`, `entertainment`, `logistics`, `extraction`.
+
+---
+
+### `GET /api/v1/states`
+
+State and region detail for all 86 game states — officials, population, and voting system. Covers US (50 states), UK (12 regions), JP (8 regions), DE (16 Länder).
+
+```bash
+curl https://statesofglory.com/api/v1/states \
+  -H "Authorization: Bearer alad_your_key_here"
+
+# Filter to one country
+curl "https://statesofglory.com/api/v1/states?country=US" \
+  -H "Authorization: Bearer alad_your_key_here"
+```
+
+**Response:**
+```json
+{
+  "snapshotId": 412,
+  "count": 86,
+  "states": [
+    {
+      "country": "US",
+      "stateId": "CA",
+      "name": "California",
+      "region": "West",
+      "population": 39538223,
+      "votingSystem": "fptp",
+      "officials": [
+        {
+          "officeType": "senate",
+          "characterId": "69e40a3a990c1761d957590c",
+          "characterName": "14th Emperor",
+          "party": "Democratic Party",
+          "partyColor": "#084bbe",
+          "isNPP": false
+        },
+        {
+          "officeType": "governor",
+          "characterId": null,
+          "characterName": "Donna Bishop",
+          "party": "Democratic Party",
+          "partyColor": "#084bbe",
+          "isNPP": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+`officeType` values include: `senate`, `house`, `governor`, `stateSenate`, `bundestag`, `ministerPresident`, `shugiin`, `sangiin`, `regionalCouncil`, `commons`, `lords`. `isNPP` is `true` for NPC/placeholder officials.
 
 ---
 
