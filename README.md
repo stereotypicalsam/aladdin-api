@@ -343,7 +343,7 @@ curl "https://statesofglory.com/api/v1/government?country=US" \
 
 ### `GET /api/v1/influence`
 
-Political influence leaderboard — top 25 players per country, ranked by influence score.
+Political influence leaderboard — all players per country, ranked by influence score.
 
 ```bash
 curl https://statesofglory.com/api/v1/influence \
