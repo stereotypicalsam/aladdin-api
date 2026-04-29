@@ -514,7 +514,6 @@ curl "https://statesofglory.com/api/v1/influence?country=US" \
       "country": "US",
       "rank": 1,
       "name": "Kaldr",
-      "influence": 84.2,
       "politicalInfluence": 84.2,
       "nationalPoliticalInfluence": 237.8,
       "favorability": 71.4,
@@ -526,7 +525,6 @@ curl "https://statesofglory.com/api/v1/influence?country=US" \
 
 | Field | Description |
 |-------|-------------|
-| `influence` | Same as `politicalInfluence` — included for backwards compatibility |
 | `politicalInfluence` | Normalised current influence score (0–100) within the current state or district |
 | `nationalPoliticalInfluence` | Raw national influence score — comparable across all players in the country |
 | `favorability` | Public favorability rating (0–100) |
@@ -661,16 +659,16 @@ Chambers covered: US senate, US house, UK commons, JP shugiin, JP sangiin, DE bu
 
 ---
 
-### `GET /api/v1/races`
+### `GET /api/v1/elections/detail`
 
-Active and upcoming election details with per-candidate compass positions.
+Active and upcoming election details with per-candidate compass positions (richer than `/elections` — sourced from the bot API).
 
 ```bash
-curl https://statesofglory.com/api/v1/races \
+curl https://statesofglory.com/api/v1/elections/detail \
   -H "Authorization: Bearer alad_your_key_here"
 
 # Filter to one country
-curl "https://statesofglory.com/api/v1/races?country=US" \
+curl "https://statesofglory.com/api/v1/elections/detail?country=US" \
   -H "Authorization: Bearer alad_your_key_here"
 ```
 
@@ -810,89 +808,9 @@ curl "https://statesofglory.com/api/v1/states?country=US" \
 
 ---
 
-### `GET /api/v1/shareholders`
-
-Full ownership table from the latest snapshot. Shows every stake in every corporation.
-
-```bash
-curl https://statesofglory.com/api/v1/shareholders \
-  -H "Authorization: Bearer alad_your_key_here"
-```
-
-**Filter by corporation** (cap table for one corp):
-```bash
-curl "https://statesofglory.com/api/v1/shareholders?corp_id=abc123" \
-  -H "Authorization: Bearer alad_your_key_here"
-```
-
-**Filter by holder** (everything one player or corp owns):
-```bash
-curl "https://statesofglory.com/api/v1/shareholders?holder_id=69ef1355c89cc52094f9e214" \
-  -H "Authorization: Bearer alad_your_key_here"
-```
-
-**Response:**
-```json
-{
-  "snapshotId": 412,
-  "count": 3,
-  "shareholdings": [
-    {
-      "corpId": "abc123",
-      "corpName": "Nexus Corp",
-      "corpCurrency": "USD",
-      "holderType": "character",
-      "holderId": "69ef1355c89cc52094f9e214",
-      "holderName": "Kaldr",
-      "shares": 210000.0,
-      "sharesPct": 21.0,
-      "sharePrice": 148.50,
-      "stakeValue": 31185000.0,
-      "stakeValueUsd": 31185000.0,
-      "isImperial": false
-    }
-  ]
-}
-```
-
-`holderType` is either `"character"` (a player) or `"corporation"` (a corp holding shares in another corp).
-
----
-
-### `GET /api/v1/parties`
-
-All parties from the latest snapshot with member counts.
-
-```bash
-curl https://statesofglory.com/api/v1/parties \
-  -H "Authorization: Bearer alad_your_key_here"
-
-# Filter to one country
-curl "https://statesofglory.com/api/v1/parties?country=US" \
-  -H "Authorization: Bearer alad_your_key_here"
-```
-
-**Response:**
-```json
-{
-  "snapshotId": 412,
-  "count": 8,
-  "parties": [
-    {
-      "country": "US",
-      "partySeqId": 1,
-      "partyName": "Republican Alliance",
-      "memberCount": 14
-    }
-  ]
-}
-```
-
----
-
 ### `GET /api/v1/parties/{party_seq_id}/members`
 
-All members of a party with their influence scores. Use `partySeqId` from `/api/v1/parties` as the path parameter.
+All members of a party with their influence scores. Use `sequentialId` from `/api/v1/macro/parties` as the path parameter.
 
 Results are sorted by `partyInfluence` descending — most influential first.
 
