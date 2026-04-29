@@ -42,15 +42,17 @@ Missing or invalid keys return `401`. Revoked keys return `403`.
 
 ## Rate Limiting
 
-Each key is capped at **120 requests per minute** by default.
+Each key is capped at **30 requests per hour** by default. Since ALADDIN data refreshes once per hour, there is no benefit to polling more frequently than that — the response will be identical until the next pipeline run.
 
 If you exceed the limit, you'll get:
 ```
 HTTP 429 Too Many Requests
-Retry-After: 14
+Retry-After: 1823
 ```
 
-The `Retry-After` value is the number of seconds until the current window resets. The window is per UTC minute — it resets at the top of the next minute, not 60 seconds from your first request.
+The `Retry-After` value is the number of seconds until the current window resets. The window is per UTC hour — it resets at the top of the next hour, not 3600 seconds from your first request.
+
+**Practical usage:** fetch `/api/v1/snapshot` first to check `fetchedAt`. If it hasn't changed since your last pull, skip re-fetching everything else — you'll burn your hourly quota for no new data.
 
 ---
 
